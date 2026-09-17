@@ -33,6 +33,7 @@ const createPDF = (bill) => {
   const doc = new jsPDF();
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
+
   const left = 15;
   const right = w - 15;
   const contentW = right - left;
@@ -46,40 +47,55 @@ const createPDF = (bill) => {
 
   const toText = (value) => {
     if (Array.isArray(value)) {
-      return value.join(" ");
+      return value;
     }
 
     if (value === null || value === undefined) {
-      return "";
+      return [""];
     }
 
-    return String(value);
+    return [String(value)];
   };
 
-  const wrap = (value, width) =>
-    doc.splitTextToSize(toText(value), width);
+  const wrap = (value, width) => {
+    const text = Array.isArray(value)
+      ? value.join(" ")
+      : value ?? "";
 
+    return doc.splitTextToSize(String(text), width);
+  };
+
+  // Background
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, w, h, "F");
 
+  // Outer border
   doc.setDrawColor(...blue);
   doc.setLineWidth(1.2);
   doc.roundedRect(8, 8, w - 16, h - 16, 3, 3);
 
+  // Inner border
   doc.setDrawColor(...lightGray);
   doc.setLineWidth(0.4);
   doc.roundedRect(11, 11, w - 22, h - 22, 2, 2);
 
+  // Header
   doc.setFillColor(...blue);
   doc.roundedRect(left, 15, contentW, 30, 3, 3, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
-  doc.text("DHRUVISHA CAB SERVICE", left + 8, 28);
+
+  doc.text(
+    "DHRUVISHA CAB SERVICE",
+    left + 8,
+    28
+  );
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
+
   doc.text(
     "Available 24/7  |  All Over India Services",
     left + 8,
@@ -88,13 +104,18 @@ const createPDF = (bill) => {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.text("INVOICE", right - 8, 23, {
-    align: "right",
-  });
+
+  doc.text(
+    "INVOICE",
+    right - 8,
+    23,
+    { align: "right" }
+  );
 
   doc.setFontSize(13);
+
   doc.text(
-    toText(bill.billNumber),
+    String(bill.billNumber ?? ""),
     right - 8,
     31,
     { align: "right" }
@@ -102,6 +123,7 @@ const createPDF = (bill) => {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
+
   doc.text(
     new Date(bill.billDate).toLocaleDateString("en-IN"),
     right - 8,
@@ -109,28 +131,71 @@ const createPDF = (bill) => {
     { align: "right" }
   );
 
+  // =========================
+  // CUSTOMER / DRIVER DETAILS
+  // =========================
+
   const infoY = 55;
   const gap = 6;
   const cardW = (contentW - gap) / 2;
+
+  // Label takes 35mm, remaining space for value
   const valueW = cardW - 47;
 
-  const customerName = wrap(bill.customerName, valueW);
-  const driverName = wrap(bill.driver, valueW);
-  const driverMobile = wrap(bill.driverMobile, valueW);
-  const vehicleNo = wrap(bill.vehicleNumber, valueW);
+  const customerName = wrap(
+    bill.customerName,
+    valueW
+  );
 
-  const customerH = 35 + customerName.length * 5;
+  const driverName = wrap(
+    bill.driver,
+    valueW
+  );
 
-  const driverH =
-    52 +
+  const driverMobile = wrap(
+    bill.driverMobile,
+    valueW
+  );
+
+  const vehicleNo = wrap(
+    bill.vehicleNumber,
+    valueW
+  );
+
+  /*
+    Calculate card height based on actual number
+    of wrapped lines.
+  */
+
+  const customerLines =
+    Math.max(
+      customerName.length,
+      1
+    );
+
+  const driverLines =
     Math.max(
       driverName.length,
       driverMobile.length,
-      vehicleNo.length
-    ) *
-      2;
+      vehicleNo.length,
+      1
+    );
 
-  const cardH = Math.max(45, customerH, driverH);
+  const customerH =
+    30 + customerLines * 7 + 10;
+
+  const driverH =
+    30 + driverLines * 7 + 20;
+
+  const cardH = Math.max(
+    55,
+    customerH,
+    driverH
+  );
+
+  // =========================
+  // DRAW CARD
+  // =========================
 
   const drawCard = (x, title, lines) => {
     doc.setFillColor(...lightBlue);
@@ -147,15 +212,18 @@ const createPDF = (bill) => {
       "FD"
     );
 
+    // Card title
     doc.setTextColor(...blue);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
+
     doc.text(
-      toText(title),
+      String(title),
       x + 6,
       infoY + 9
     );
 
+    // Title underline
     doc.setDrawColor(...blue);
     doc.line(
       x + 6,
@@ -167,51 +235,81 @@ const createPDF = (bill) => {
     let y = infoY + 22;
 
     lines.forEach(([label, value]) => {
-      const textValue = toText(value);
+      const valueLines = Array.isArray(value)
+        ? value
+        : wrap(value, valueW);
 
+      // Label
       doc.setTextColor(...gray);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
+
       doc.text(
-        toText(label),
+        String(label),
         x + 6,
         y
       );
 
+      // Value
       doc.setTextColor(...black);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
 
-      doc.text(
-        textValue,
-        x + 35,
-        y
-      );
+      /*
+        IMPORTANT:
+        Wrapped value હવે દરેક line પર
+        separately print થશે.
+      */
 
-      y += 10;
+      valueLines.forEach((line, index) => {
+        doc.text(
+          String(line),
+          x + 35,
+          y + index * 6
+        );
+      });
+
+      /*
+        Next row માટે space:
+        જો name 2-3 lines હોય તો
+        automatically extra height મળશે.
+      */
+
+      y += Math.max(
+        10,
+        valueLines.length * 6 + 4
+      );
     });
   };
 
+  // Customer card
   drawCard(left, "CUSTOMER DETAILS", [
-    ["Name", toText(customerName)],
-    ["Mobile", toText(bill.mobile)],
+    ["Name", customerName],
+    ["Mobile", wrap(bill.mobile, valueW)],
   ]);
 
+  // Driver card
   drawCard(
     left + cardW + gap,
     "DRIVER DETAILS",
     [
-      ["Driver", toText(driverName)],
-      ["Mobile", toText(driverMobile)],
-      ["Vehicle No.", toText(vehicleNo)],
+      ["Driver", driverName],
+      ["Mobile", driverMobile],
+      ["Vehicle No.", vehicleNo],
     ]
   );
 
-  const tripTitleY = infoY + cardH + 25;
+  // =========================
+  // TRIP DETAILS
+  // =========================
+
+  const tripTitleY =
+    infoY + cardH + 25;
 
   doc.setTextColor(...darkBlue);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
+
   doc.text(
     "TRIP DETAILS",
     left,
@@ -220,6 +318,7 @@ const createPDF = (bill) => {
 
   doc.setDrawColor(...blue);
   doc.setLineWidth(0.8);
+
   doc.line(
     left,
     tripTitleY + 3,
@@ -228,10 +327,14 @@ const createPDF = (bill) => {
   );
 
   const tableY = tripTitleY + 12;
+
   const pickupW = 58;
   const dropW = 58;
+
   const vehicleW =
-    contentW - pickupW - dropW;
+    contentW -
+    pickupW -
+    dropW;
 
   const pickup = wrap(
     bill.pickup,
@@ -260,7 +363,9 @@ const createPDF = (bill) => {
       5.5 +
     10;
 
+  // Table header
   doc.setFillColor(...blue);
+
   doc.roundedRect(
     left,
     tableY,
@@ -293,6 +398,7 @@ const createPDF = (bill) => {
     tableY + 8
   );
 
+  // Table body
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(...lightGray);
   doc.setLineWidth(0.5);
@@ -319,7 +425,9 @@ const createPDF = (bill) => {
   );
 
   const textY =
-    tableY + headerH + 9;
+    tableY +
+    headerH +
+    9;
 
   doc.setTextColor(...black);
   doc.setFont("helvetica", "normal");
@@ -353,6 +461,10 @@ const createPDF = (bill) => {
       lineHeightFactor: 1.35,
     }
   );
+
+  // =========================
+  // TOTAL
+  // =========================
 
   const totalY =
     tableY +
@@ -399,7 +511,7 @@ const createPDF = (bill) => {
   doc.setFontSize(22);
 
   doc.text(
-    `Rs. ${toText(bill.totalAmount)}`,
+    `Rs. ${String(bill.totalAmount ?? "")}`,
     right - 8,
     totalY + 21,
     {
@@ -407,7 +519,12 @@ const createPDF = (bill) => {
     }
   );
 
-  const thankY = totalY + 55;
+  // =========================
+  // THANK YOU
+  // =========================
+
+  const thankY =
+    totalY + 55;
 
   doc.setTextColor(...gray);
   doc.setFont("helvetica", "normal");
@@ -433,7 +550,12 @@ const createPDF = (bill) => {
     }
   );
 
-  const signatureY = thankY + 25;
+  // =========================
+  // SIGNATURE
+  // =========================
+
+  const signatureY =
+    thankY + 25;
 
   doc.setDrawColor(...lightGray);
   doc.setLineWidth(0.5);
@@ -471,7 +593,12 @@ const createPDF = (bill) => {
     }
   );
 
-  const footerY = h - 27;
+  // =========================
+  // FOOTER
+  // =========================
+
+  const footerY =
+    h - 27;
 
   doc.setDrawColor(...lightGray);
 
