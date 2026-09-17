@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const API = "http://localhost:5000/api";
+const API = "https://dhruvisha-cab-service.onrender.com/api";
 
 function AdminDashboard() {
   const navigate = useNavigate();

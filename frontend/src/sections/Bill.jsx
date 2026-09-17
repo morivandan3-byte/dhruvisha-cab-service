@@ -552,7 +552,7 @@ const Bill = () => {
       setError("");
 
       const response = await fetch(
-        "http://localhost:5000/api/bills",
+        "https://dhruvisha-cab-service.onrender.com/api/bills",
         {
           method: "POST",
           headers: {
