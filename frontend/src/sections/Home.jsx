@@ -71,7 +71,7 @@ const Home = () => {
           {/* Buttons */}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
-              href="#contact"
+              href="#Bill"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-7 py-3.5 font-semibold text-black transition hover:bg-yellow-300"
             >
               <CarFront size={19} />
