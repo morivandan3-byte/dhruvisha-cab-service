@@ -67,7 +67,8 @@ const Contact = () => {
                   </p>
 
                   <p className="mt-1 text-sm font-medium text-gray-800 group-hover:text-yellow-500 dark:text-white/80 dark:group-hover:text-yellow-400">
-                    +91 97124 97925
+                    +91 97124 97925<br />
+                    +91 81406 75891 
                   </p>
                 </div>
               </a>

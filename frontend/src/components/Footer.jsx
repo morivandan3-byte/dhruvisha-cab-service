@@ -73,7 +73,8 @@ const Footer = () => {
                 className="flex items-center gap-3 transition hover:text-yellow-500 dark:hover:text-yellow-400"
               >
                 <Phone size={17} className="text-yellow-500 dark:text-yellow-400" />
-                +91 97124 97925
+                +91 97124 97925 <br />
+                +91 81406 75891
               </a>
 
               <a
